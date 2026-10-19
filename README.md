@@ -1811,6 +1811,11 @@ const [sel, setSel] = useState({ start: 0, end: 0 })
 The `select` event is deduplicated: an unchanged selection is not re-emitted,
 so the `onSelect` → state → `selection` echo converges instead of looping.
 
+The prop is applied only when it **changes**: an unchanged `selection` value
+is never re-asserted, so typing over a selection keeps the edit's caret
+instead of being clobbered by the stale prop. Treat the prop as a command
+("go here"), and let `onSelect` report what the user did.
+
 The focused caret stays solid during edits and then blinks every 500ms while
 idle. It stops scheduling repaint frames on blur or while the window is
 inactive. Override its colour through the shared native theme:

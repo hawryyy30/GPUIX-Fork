@@ -320,6 +320,11 @@ struct TextEditorElement {
     /// Programmatic selection from the `selection` prop, as UTF-16 offsets.
     /// Applied to the editor state during render; `None` means uncontrolled.
     selection: Option<(usize, usize)>,
+    /// Last `selection` prop value we applied. The prop is only (re-)applied
+    /// when it differs from this: re-applying an unchanged prop after the
+    /// user edited the text would clobber the edit's caret with a stale,
+    /// clamped range. The prop is a command ("go here"), not a constraint.
+    last_applied_selection: Option<(usize, usize)>,
     /// Last selection reported through the `select` event (UTF-16), used to
     /// avoid re-emitting an unchanged selection on every frame.
     last_emitted_selection: Option<(usize, usize)>,
@@ -338,6 +343,7 @@ impl TextEditorElement {
             theme: Theme::dark(),
             state: None,
             selection: None,
+            last_applied_selection: None,
             last_emitted_selection: None,
         }
     }
@@ -447,8 +453,11 @@ impl CustomElement for TextEditorElement {
             if prop_changed {
                 state.sync_prop_value(self.value.clone(), cx);
             }
-            if let Some((start, end)) = self.selection {
-                state.sync_prop_selection(start, end, cx);
+            if self.selection != self.last_applied_selection {
+                if let Some((start, end)) = self.selection {
+                    state.sync_prop_selection(start, end, cx);
+                }
+                self.last_applied_selection = self.selection;
             }
         });
         self.last_prop_value = Some(self.value.clone());
